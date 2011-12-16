@@ -22,85 +22,126 @@
 // =============================================================================*/
 
 
-$.fn.timePick = function(options) {
-    var defaults = {
+(function($) {
+    $.timePick = function(el, options) {
+
+        var base = this;
+
+        // Access to jQuery and DOM versions of element
+        base.$el = $(el);
+        base.el = el;
+
+        // reverse reference to the DOM object
+        base.$el.data("timePick", base);
+
+        base.init = function() {
+            // initialization code 
+            base.options = $.extend({},$.timePick.defaultOptions, options);
+
+            base.objDate = new Date();
+            base.strDate = "";
+            base.destinationId = base.el.id;
+
+            base.hourSel = base.el.id + "_" + base.options.hourName;
+            base.minuteSel = base.el.id + "_" + base.options.minuteName;
+            base.ampmSel = base.el.id + "_" + base.options.ampmName;
+            base.priorVal = new Date(Date.parse(base.el.value));
+
+            var minutePickerOptions = "";
+            for (i = 0; i < 60; i = i + base.options.minuteIncrement) {
+                val = (i < 10) ? "0" + i: i;
+                minutePickerOptions += "<option>" + val + "</option>";
+            }
+            var hourPickerOptions = "";
+            for (i = 0; i < 12; i = i + base.options.hourIncrement) {
+                var displayVal = (i === 0) ? "12": i;
+                var optVal = (i === 0) ? "00": i;
+                hourPickerOptions += "<option value='" + optVal + "'>" + displayVal + "</option>";
+            }
+            picker = "<select id='" + base.hourSel + "'>" + hourPickerOptions + "</select>" + base.options.separator + "<select id='" + base.minuteSel + "'>" + minutePickerOptions + "</select>" + "<select id='" + base.ampmSel + "'>" + "<option>AM</option>" + "<option>PM</option>" + "</select>";
+            base.$el.after(picker);
+			base.$el.hide();
+
+            group = new Array(base.options.hourName, base.options.minuteName, base.options.ampmName);
+
+            for (i = 0; i < group.length; i++) {
+                item = '#' + base.el.id + "_" + group[i];
+                $(item).addClass(group[i]).addClass(base.options.groupName);
+                $(item).change(function() {
+                    base.setTime();
+                });
+            }
+
+            base.configTime();
+            base.updateDate();
+
+            if (base.options.datefield) {
+                $("#" + base.options.datefield).change(function() {
+                    base.updateDate();
+                });
+            }
+
+        };
+
+        base.configTime = function() {
+            $("#" + base.minuteSel).val(base.priorVal.getMinutes());
+            hourVal = (base.priorVal.getHours() < 12) ? base.priorVal.getHours() : base.priorVal.getHours() - 12;
+            ampmVal = (base.priorVal.getHours() > 11) ? "PM": "AM"
+            $("#" + base.hourSel).val(hourVal);
+            $("#" + base.ampmSel).val(ampmVal);
+        }
+
+        base.setTime = function() {
+            v12h = $("#" + base.ampmSel).val();
+            if ((base.options.ampm == true) && v12h == "pm") {
+                hourVal = $("#" + base.hourSel).val();
+                if (hourVal == "00") {
+                    hourVal = "12";
+                }
+            } else {
+                hourVal = $("#" + base.hourSel).val();
+            }
+            newVal = base.strDate + " " + hourVal + ":" + $("#" + base.minuteSel).val() + "" + $("#" + base.ampmSel).val();
+            $("#" + base.destinationId).val(newVal);
+
+        }
+
+        base.setDate = function() {
+            if (base.options.datefield) {
+                base.strDate = $("#" + base.options.datefield).val();
+                base.objDate = new Date(base.strDate);
+            } else {
+                base.objDate = new Date();
+                base.strDate = (base.objDate.getMonth() + 1) + "/" + base.objDate.getDate() + "/" + base.objDate.getFullYear();
+            }
+            return base.strDate;
+        }
+
+        base.updateDate = function() {
+            base.setDate();
+            base.setTime();
+        }
+
+        // Run initializer
+        base.init();
+    };
+
+    $.timePick.defaultOptions = {
         datefield: null,
         ampm: true,
-        minuteIncrement: 5,
+        minuteIncrement: 1,
         hourIncrement: 1,
-        hourSel: "hh",
-        minuteSel: "mm",
-        ampmSel: "ampm"
+        separator: ":",
+        hourName: "hh",
+        minuteName: "mm",
+        ampmName: "ampm",
+        groupName: "time-group"
     };
-    options = $.extend(defaults, options);
 
-    var objDate = new Date();
-    var strDate = "";
-    var destinationId = this.prop('id');
-    var hourSel = this.prop('id') + "_" + options.hourSel;
-    var minuteSel = this.prop('id') + "_" + options.minuteSel;
-    var ampmSel = this.prop('id') + "_" + options.ampmSel;
-    
-    //internal functions
-
-    
-    
-    var minutePickerOptions = "";
-    for (i = 0; i < 60; i = i + options.minuteIncrement) {
-        val = (i < 10) ? "0" + i : i;
-        minutePickerOptions += "<option>" + val + "</option>";
-    }
-    var hourPickerOptions = "";
-    for (i = 0; i < 12; i = i + options.hourIncrement) {
-        var displayVal = (i === 0) ? "12" : i;
-        var optVal = (i === 0) ? "00" : i;
-        hourPickerOptions += "<option value='" + optVal + "'>" + displayVal + "</option>";
-    }
-    picker = "<select id='" + hourSel + "'>" + hourPickerOptions + "</select>" + " " + ":" + " " + "<select id='" + minuteSel + "'>" + minutePickerOptions + "</select>" + "<select id='" + ampmSel + "'>" + "<option>am</option>" + "<option>PM</option>" + "</select>" + "<input type='hidden' id='" + this.prop('id') + "'/>";
-
-    this.replaceWith(picker);
-    
-    
-    function setTime() {
-        hourVal = (($("#" + hourSel).val() == 00)&&(options.ampm==true) &&($("#" + ampmSel).val() == "PM")) ? 12 : 00;
-        $("#" + destinationId).val(strDate + " " + hourVal + ":" + $("#" + minuteSel).val() + "" + $("#" + ampmSel).val());
-        
-    }
-
-    function setDate() {
-        if(options.datefield){
-            strDate = $("#" + options.datefield).val();
-            objDate = new Date(strDate);
-        } else {
-            objDate = new Date();
-            strDate = (objDate.getMonth() + 1) + "/" + objDate.getDate() + "/" + objDate.getFullYear();
-        }
-        
-        return strDate;
-    }
-
-    function updateDate() {
-        setDate();
-        setTime();
-    }
-    updateDate();
-
-
-    $("#" + hourSel).change(function(){
-        setTime();
-    });
-    $("#" + minuteSel).change(function(){
-        setTime();
-    });
-    $("#" + ampmSel).change(function(){
-        setTime();
-    });
-
-    if (options.datefield) {
-        $("#" + options.datefield).change(function (){
-        updateDate();
+    $.fn.timePick = function(options) {
+        return this.each(function() {
+            (new $.timePick(this, options));
         });
-    }
+    };
 
-
-};
+})(jQuery);
