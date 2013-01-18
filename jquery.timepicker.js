@@ -47,18 +47,28 @@
             base.ampmSel = base.el.id + "_" + base.options.ampmName;
             base.priorVal = new Date(Date.parse(base.el.value));
 
+            var maxhrs;
+            if (base.options.ampm) {
+                maxhrs = 12;
+            } else {
+                maxhrs = 24;
+            }
+
             var minutePickerOptions = "";
             for (i = 0; i < 60; i = i + base.options.minuteIncrement) {
                 val = (i < 10) ? "0" + i: i;
                 minutePickerOptions += "<option>" + val + "</option>";
             }
             var hourPickerOptions = "";
-            for (i = 0; i < 12; i = i + base.options.hourIncrement) {
-                var displayVal = (i === 0) ? "12": i;
+            for (i = 0; i < maxhrs; i = i + base.options.hourIncrement) {
+                var displayVal = (i === 0 && base.options.ampm) ? "12": i;
                 var optVal = (i === 0) ? "00": i;
                 hourPickerOptions += "<option value='" + optVal + "'>" + displayVal + "</option>";
             }
-            picker = "<select id='" + base.hourSel + "'>" + hourPickerOptions + "</select>" + base.options.separator + "<select id='" + base.minuteSel + "'>" + minutePickerOptions + "</select>" + "<select id='" + base.ampmSel + "'>" + "<option>AM</option>" + "<option>PM</option>" + "</select>";
+            picker = "<select id='" + base.hourSel + "'>" + hourPickerOptions + "</select>" + base.options.separator + "<select id='" + base.minuteSel + "'>" + minutePickerOptions + "</select>";
+            if (base.options.ampm) {
+                picker += "<select id='" + base.ampmSel + "'>" + "<option>AM</option>" + "<option>PM</option>" + "</select>";
+            }
             base.$el.after(picker);
 			base.$el.hide();
 
@@ -85,23 +95,30 @@
 
         base.configTime = function() {
             $("#" + base.minuteSel).val(base.priorVal.getMinutes());
-            hourVal = (base.priorVal.getHours() < 12) ? base.priorVal.getHours() : base.priorVal.getHours() - 12;
-            ampmVal = (base.priorVal.getHours() > 11) ? "PM": "AM"
+            if (base.options.ampm) {
+                hourVal = (base.priorVal.getHours() < 12) ? base.priorVal.getHours() : base.priorVal.getHours() - 12;
+                ampmVal = (base.priorVal.getHours() > 11) ? "PM": "AM"
+                $("#" + base.ampmSel).val(ampmVal);
+            } else {
+                hourVal = base.priorVal.getHours();
+            }
             $("#" + base.hourSel).val(hourVal);
-            $("#" + base.ampmSel).val(ampmVal);
         }
 
         base.setTime = function() {
-            v12h = $("#" + base.ampmSel).val();
-            if ((base.options.ampm == true) && v12h == "pm") {
-                hourVal = $("#" + base.hourSel).val();
-                if (hourVal == "00") {
-                    hourVal = "12";
+            hourVal = $("#" + base.hourSel).val();
+            minVal = $("#" + base.minuteSel).val();
+            if (base.options.ampm) {
+                v12h = $("#" + base.ampmSel).val();
+                if (v12h == "pm") {
+                    if (hourVal == "00") {
+                        hourVal = "12";
+                    }
                 }
+                newVal = base.strDate + " " + hourVal + ":" + minVal + v12h;
             } else {
-                hourVal = $("#" + base.hourSel).val();
+                newVal = base.strDate + " " +  hourVal + ":" + minVal;
             }
-            newVal = base.strDate + " " + hourVal + ":" + $("#" + base.minuteSel).val() + "" + $("#" + base.ampmSel).val();
             $("#" + base.destinationId).val(newVal);
 
         }
