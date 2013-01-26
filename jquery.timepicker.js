@@ -66,14 +66,18 @@
                 hourPickerOptions += "<option value='" + optVal + "'>" + displayVal + "</option>";
             }
             picker = "<select id='" + base.hourSel + "'>" + hourPickerOptions + "</select>" + base.options.separator + "<select id='" + base.minuteSel + "'>" + minutePickerOptions + "</select>";
+            var group;
             if (base.options.ampm) {
                 picker += "<select id='" + base.ampmSel + "'>" + "<option>AM</option>" + "<option>PM</option>" + "</select>";
+                group = new Array(base.options.hourName, base.options.minuteName, base.options.ampmName);
+            } else {
+                group = new Array(base.options.hourName, base.options.minuteName);
             }
             base.$el.after(picker);
 			base.$el.hide();
 
-            group = new Array(base.options.hourName, base.options.minuteName, base.options.ampmName);
 
+            var item;
             for (i = 0; i < group.length; i++) {
                 item = '#' + base.el.id + "_" + group[i];
                 $(item).addClass(group[i]).addClass(base.options.groupName);
